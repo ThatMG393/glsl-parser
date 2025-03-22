@@ -80,6 +80,7 @@ add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 if(BUILD_EXECUTABLE)
     add_executable(${PROJECT_NAME}-exe ${EXE_SOURCES})
     target_link_libraries(${PROJECT_NAME}-exe PRIVATE ${PROJECT_NAME}::${PROJECT_NAME})
+    set_target_properties(${PROJECT_NAME}-exe PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
 
     if(BUILD_LIBRARY_SHARED)
         set_target_properties(${PROJECT_NAME}-exe PROPERTIES
