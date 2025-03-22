@@ -696,6 +696,7 @@ int main(int argc, char **argv) {
             fseek(sources[i].file, 0, SEEK_END);
             contents.resize(ftell(sources[i].file));
             fseek(sources[i].file, 0, SEEK_SET);
+#pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-result"
             fread(&contents[0], 1, contents.size(), sources[i].file);
 #pragma GCC diagnostic pop
