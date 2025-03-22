@@ -3,15 +3,18 @@
 **glsl-parser** is an offline GLSL parser which can be used to do many things with GLSL source code.
 
 The straight-forward API allows you to parse GLSL into an abstact-syntax-tree in only a couple lines, for example
+```cpp
+#include <glsl-parser/parser.h>
 
-    glsl::parser parse(sourceCode);
-    glsl::astTU *translationUnit = parse.parse(astTU::kFragment);
-    if (translationUnit) {
-        // Do something with the AST here
-    } else {
-        // A parse error occured
-        fprintf(stderr, "%s\n", parse.error());
-    }
+glsl::parser parse(sourceCode);
+glsl::astTU *translationUnit = parse.parse(astTU::kFragment);
+if (translationUnit) {
+    // Do something with the AST here
+} else {
+    // A parse error occured
+    fprintf(stderr, "%s\n", parse.error());
+}
+```
 
 A test-suite and GLSL source-generator is included to get you started.
 
@@ -40,3 +43,18 @@ Check out the superior diagnostics [here](EXAMPLE_ERRORS.md)
   * Doesn't use virtual functions
   * Small (~90 KB)
   * Permissive (MIT)
+
+### Building
+Run:
+```bash
+mkdir build
+cd build
+
+cmake ..
+cmake --build . -- -j$(nproc)
+```
+
+If you wish to install the built targets, run this:
+```bash
+sudo cmake --install .
+```
