@@ -1,5 +1,8 @@
 #ifndef UTIL_H
 #define UTIL_H
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <stdarg.h> // va_list
 #include <vector>
 
@@ -12,6 +15,15 @@ static inline I find(I first, I last, const T &value) {
         if (*first == value)
             return first;
     return last;
+}
+
+// An implementation of itoa
+// Remember to free the string!
+static inline char* itoa(int x) {
+    int length = snprintf(NULL, 0, "%d", x);
+    char* str = reinterpret_cast<char*>(malloc(length + 1));
+    snprintf(str, length + 1, "%d", x);
+    return str;
 }
 
 // An implementation of vasprintf
@@ -45,6 +57,117 @@ struct vector {
     void resize(size_t size) { m_data.resize(size); }
 private:
     std::vector<T> m_data;
+};
+
+struct indent_aware_stringbuilder {
+    indent_aware_stringbuilder() : buffer(NULL), capacity(0), length(0), currentIndent(0), atLineStart(true) {
+        resize(16);
+    }
+    
+    ~indent_aware_stringbuilder() {
+        delete[] buffer;
+    }
+    
+    void pushIndent(int spaces = 4) {
+        indentStack.push_back(spaces);
+        currentIndent += spaces;
+    }
+    
+    void popIndent() {
+        if (!indentStack.empty()) {
+            currentIndent -= indentStack.back();
+            indentStack.pop_back();
+        }
+    }
+    
+    void append(const char* str) {
+        if (!str) return;
+        
+        size_t strLen = strlen(str);
+        if (strLen == 0) return;
+        
+        for (size_t i = 0; i < strLen; ++i) {
+            if (atLineStart) {
+                appendIndentation();
+            }
+            
+            ensureCapacity(1);
+            buffer[length++] = str[i];
+            
+            if (str[i] == '\n') {
+                atLineStart = true;
+            }
+        }
+    }
+    
+    void appendLine(const char* str = "") {
+        append(str);
+        append("\n");
+    }
+    
+    const char* toString() const {
+        // Ensure null termination
+        if (length >= capacity) {
+            const_cast<indent_aware_stringbuilder*>(this)->resize(length + 1);
+        }
+        buffer[length] = '\0';
+        return buffer;
+    }
+    
+    size_t getLength() const {
+        return length;
+    }
+    
+    void clear() {
+        length = 0;
+        currentIndent = 0;
+        indentStack.clear();
+        atLineStart = true;
+    }
+
+    indent_aware_stringbuilder& operator+=(const char* str) {
+        append(str);
+        return *this;
+    }
+
+private:
+    char* buffer;
+    size_t capacity;
+    size_t length;
+    
+    std::vector<int> indentStack;
+    int currentIndent;
+    bool atLineStart;
+    
+    void resize(size_t newCapacity) {
+        char* newBuffer = new char[newCapacity];
+        if (buffer) {
+            std::memcpy(newBuffer, buffer, length);
+            delete[] buffer;
+        }
+        buffer = newBuffer;
+        capacity = newCapacity;
+    }
+    
+    void ensureCapacity(size_t additionalChars) {
+        if (length + additionalChars >= capacity) {
+            size_t newCapacity = (capacity == 0) ? 16 : capacity * 2;
+            while (length + additionalChars >= newCapacity) {
+                newCapacity *= 2;
+            }
+            resize(newCapacity);
+        }
+    }
+    
+    void appendIndentation() {
+        if (atLineStart && currentIndent > 0) {
+            ensureCapacity(currentIndent);
+            for (int i = 0; i < currentIndent; ++i) {
+                buffer[length++] = ' ';
+            }
+        }
+        atLineStart = false;
+    }
 };
 
 }
