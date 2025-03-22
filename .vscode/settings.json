@@ -1,7 +1,0 @@
-{
-    "cmake.configureOnEdit": false,
-    "cmake.automaticReconfigure": false,
-    "clangd.arguments": [
-        "--resource-dir=/usr/lib/llvm-18/lib/clang/18/"
-    ]
-}
