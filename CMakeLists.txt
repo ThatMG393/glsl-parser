@@ -28,7 +28,7 @@ if(MSVC)
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
     set(COMPILER_SPECIFIC_OPTIONS /permissive- /Zc:preprocessor /W4)
 else()
-    # Non-MSVC flags (fixing the typo in -fno-exceptions)
+    # Non-MSVC flags
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -fno-exceptions -Wall -Wextra -Wformat -O3")
     set(COMPILER_SPECIFIC_OPTIONS "")
 endif()
@@ -57,37 +57,44 @@ set(EXE_SOURCES
 
 # First, create the library target(s)
 if(BUILD_STATIC_LIB)
-    add_library(${PROJECT_NAME}_static STATIC ${LIB_SOURCES})
-    set_target_properties(${PROJECT_NAME}_static PROPERTIES
+    add_library(glsl-parser_static STATIC ${LIB_SOURCES})
+    set_target_properties(glsl-parser_static PROPERTIES
         OUTPUT_NAME ${PROJECT_NAME}
         POSITION_INDEPENDENT_CODE ON
     )
-    target_compile_options(${PROJECT_NAME}_static PRIVATE ${COMPILER_SPECIFIC_OPTIONS})
-    target_include_directories(${PROJECT_NAME}_static PUBLIC
+    target_compile_options(glsl-parser_static PRIVATE ${COMPILER_SPECIFIC_OPTIONS})
+    target_include_directories(glsl-parser_static PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
         $<INSTALL_INTERFACE:include>
     )
+    # Create an alias target for use in other projects
+    add_library(${PROJECT_NAME}::static ALIAS glsl-parser_static)
 endif()
 
 if(BUILD_SHARED_LIB)
-    add_library(${PROJECT_NAME}_shared SHARED ${LIB_SOURCES})
-    set_target_properties(${PROJECT_NAME}_shared PROPERTIES
+    add_library(glsl-parser_shared SHARED ${LIB_SOURCES})
+    set_target_properties(glsl-parser_shared PROPERTIES
         OUTPUT_NAME ${PROJECT_NAME}
         POSITION_INDEPENDENT_CODE ON
     )
-    target_compile_options(${PROJECT_NAME}_shared PRIVATE ${COMPILER_SPECIFIC_OPTIONS})
-    target_include_directories(${PROJECT_NAME}_shared PUBLIC
+    target_compile_options(glsl-parser_shared PRIVATE ${COMPILER_SPECIFIC_OPTIONS})
+    target_include_directories(glsl-parser_shared PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
         $<INSTALL_INTERFACE:include>
     )
+    # Create an alias target for use in other projects
+    add_library(${PROJECT_NAME}::shared ALIAS glsl-parser_shared)
 endif()
 
 # Set the main library target for other targets to link against
 if(BUILD_STATIC_LIB)
-    set(MAIN_LIB_TARGET ${PROJECT_NAME}_static)
+    set(MAIN_LIB_TARGET glsl-parser_static)
 else()
-    set(MAIN_LIB_TARGET ${PROJECT_NAME}_shared)
+    set(MAIN_LIB_TARGET glsl-parser_shared)
 endif()
+
+# Add generic target as well
+add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${MAIN_LIB_TARGET})
 
 # Build the executable if requested
 if(BUILD_EXECUTABLE)
@@ -99,20 +106,13 @@ if(BUILD_EXECUTABLE)
     target_compile_options(${PROJECT_NAME}_exe PRIVATE ${COMPILER_SPECIFIC_OPTIONS})
 endif()
 
-# Create an alias target for use in other projects
-if(BUILD_STATIC_LIB)
-    add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME}_static)
-elseif(BUILD_SHARED_LIB)
-    add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME}_shared)
-endif()
-
 # Installation rules
 if(INSTALL_BUILD)
     include(GNUInstallDirs)
     
     # Install the libraries
     if(BUILD_STATIC_LIB)
-        install(TARGETS ${PROJECT_NAME}_static
+        install(TARGETS glsl-parser_static
             EXPORT ${PROJECT_NAME}Targets
             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
             LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -122,7 +122,7 @@ if(INSTALL_BUILD)
     endif()
     
     if(BUILD_SHARED_LIB)
-        install(TARGETS ${PROJECT_NAME}_shared
+        install(TARGETS glsl-parser_shared
             EXPORT ${PROJECT_NAME}Targets
             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
             LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
