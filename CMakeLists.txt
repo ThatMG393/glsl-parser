@@ -9,7 +9,6 @@ option(BUILD_LIBRARY_STATIC "Build as a static library"                       ON
 option(BUILD_LIBRARY_SHARED "Build as a shared library"                       OFF)
 option(BUILD_EXECUTABLE     "Build the executable"                            ON)
 option(BUILD_STRIP_TARGETS  "Strip both library and executable (if possible)" OFF)
-option(BUILD_INSTALL        "Install the built library and executable"        OFF)
 
 if(BUILD_LIBRARY_STATIC AND BUILD_LIBRARY_SHARED)
     set(BUILD_LIBRARY_SHARED ON)
@@ -20,7 +19,6 @@ endif()
 
 if(BUILD_EXECUTABLE)
     message(STATUS "Since BUILD_EXECUTABLE was set, BUILD_INSTALL was automatically set.")
-    set(BUILD_INSTALL ON) # might not allow the user to turn off installing
     if (BUILD_LIBRARY_SHARED)
         message(STATUS "Building executable and linking to shared library is not adviced.")
     endif()
@@ -111,24 +109,22 @@ if(BUILD_STRIP_TARGETS)
     endif()
 endif()
 
-if(BUILD_INSTALL)
-    include(GNUInstallDirs)
+include(GNUInstallDirs)
 
-    install(FILES ${LIB_HEADERS}
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/glsl-parser
-    )
+install(FILES ${LIB_HEADERS}
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/glsl-parser
+)
 
-    install(TARGETS ${PROJECT_NAME}
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+install(TARGETS ${PROJECT_NAME}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+if(BUILD_EXECUTABLE)
+    install(TARGETS ${PROJECT_NAME}-exe
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     )
-
-    if(BUILD_EXECUTABLE)
-        install(TARGETS ${PROJECT_NAME}-exe
-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        )
-    endif()
 endif()
 
 message(STATUS "Build Configuration:")
