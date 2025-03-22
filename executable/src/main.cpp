@@ -1,14 +1,14 @@
 #include <stdio.h>  // fread, fclose, fprintf, stderr
 #include <string.h> // strcmp, memcpy
 
-#include "parser.h"
+#include "glsl-parser/parser.h"
 
 using namespace glsl;
 
 #undef KEYWORD
 #define KEYWORD(X) #X,
 static const char *kTypes[] = {
-    #include "lexemes.h"
+    #include "glsl-parser/lexemes.h"
 };
 #undef KEYWORD
 #define KEYWORD(...)
@@ -16,7 +16,7 @@ static const char *kTypes[] = {
 #undef OPERATOR
 #define OPERATOR(N, S, P) S,
 static const char *kOperators[] = {
-    #include "lexemes.h"
+    #include "glsl-parser/lexemes.h"
 };
 #undef OPERATOR
 #define OPERATOR(...)
@@ -696,7 +696,9 @@ int main(int argc, char **argv) {
             fseek(sources[i].file, 0, SEEK_END);
             contents.resize(ftell(sources[i].file));
             fseek(sources[i].file, 0, SEEK_SET);
+#pragma GCC diagnostic ignored "-Wunused-result"
             fread(&contents[0], 1, contents.size(), sources[i].file);
+#pragma GCC diagnostic pop
             fclose(sources[i].file);
         } else {
             char buffer[1024];

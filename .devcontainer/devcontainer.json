@@ -7,10 +7,9 @@
       "build_tools": "24.0.0"
     },
     "ghcr.io/devcontainers/features/java:1": {
-      "version": "21.0.5",
+      "version": "21.0.6",
       "jdkDistro": "graal"
-    },
-    "ghcr.io/devcontainers-extra/features/cmake:1": { }
+    }
   },
-  "postStartCommand": "sudo apt update && sudo apt install clangd clang ccache ninja-build -y"
+  "postStartCommand": "sudo apt update && sudo apt install clangd clang ccache ninja-build cmake -y"
 }

@@ -11,7 +11,7 @@ namespace glsl {
 // Types
 #define TYPE(X) kType_##X,
 enum {
-    #include "lexemes.h"
+    #include "glsl-parser/lexemes.h"
 };
 #undef TYPE
 #define TYPE(...)
@@ -20,7 +20,7 @@ enum {
 #undef KEYWORD
 #define KEYWORD(X) kKeyword_##X,
 enum {
-    #include "lexemes.h"
+    #include "glsl-parser/lexemes.h"
 };
 #undef KEYWORD
 #define KEYWORD(...)
@@ -29,7 +29,7 @@ enum {
 #undef OPERATOR
 #define OPERATOR(X, ...) kOperator_##X,
 enum {
-    #include "lexemes.h"
+    #include "glsl-parser/lexemes.h"
 };
 #undef OPERATOR
 #define OPERATOR(...)

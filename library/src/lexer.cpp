@@ -2,7 +2,7 @@
 #include <stdlib.h> // malloc, free
 #include <limits.h> // INT_MAX, UINT_MAX
 
-#include "lexer.h"
+#include "glsl-parser/lexer.h"
 
 namespace glsl {
 
@@ -10,7 +10,7 @@ namespace glsl {
 #undef KEYWORD
 #define KEYWORD(X) { #X, kKeyword_##X },
 static const keywordInfo kKeywords[] = {
-    #include "lexemes.h"
+    #include "glsl-parser/lexemes.h"
 };
 #undef KEYWORD
 #define KEYWORD(...)
@@ -19,7 +19,7 @@ static const keywordInfo kKeywords[] = {
 #undef OPERATOR
 #define OPERATOR(X, S, PREC) { #X, S, PREC },
 static const operatorInfo kOperators[] = {
-    #include "lexemes.h"
+    #include "glsl-parser/lexemes.h"
 };
 #undef OPERATOR
 #define OPERATOR(...)
