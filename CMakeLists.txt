@@ -5,22 +5,37 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-option(BUILD_STATIC_LIB "Build as a static library" ON)
-option(BUILD_SHARED_LIB "Build as a shared library" OFF)
-option(BUILD_EXECUTABLE "Build the executable" ON)
-option(INSTALL_BUILD "Install the built library and executable" OFF)
+option(BUILD_LIBRARY_STATIC "Build as a static library"                       ON)
+option(BUILD_LIBRARY_SHARED "Build as a shared library"                       OFF)
+option(BUILD_EXECUTABLE     "Build the executable"                            ON)
+option(BUILD_STRIP_TARGETS  "Strip both library and executable (if possible)" OFF)
+option(BUILD_INSTALL        "Install the built library and executable"        OFF)
 
-if(BUILD_STATIC_LIB AND BUILD_SHARED_LIB)
-    set(BUILD_SHARED_LIB OFF)
+if(BUILD_LIBRARY_STATIC AND BUILD_LIBRARY_SHARED)
+    set(BUILD_LIBRARY_SHARED ON)
+    set(BUILD_LIBRARY_STATIC OFF)
+    message("Both BUILD_LIBRARY_STATIC and BUILD_LIBRARY_SHARED was set.")
+    message("Prioritizing BUILD_LIBRARY_SHARED")
 endif()
 
 if(BUILD_EXECUTABLE)
-    set(INSTALL_BUILD ON)
-    set(BUILD_STATIC_LIB ON)
+    message("Since BUILD_EXECUTABLE was set, BUILD_INSTALL was automatically set.")
+    set(BUILD_INSTALL ON) # might not allow the user to turn off installing
+    if (BUILD_LIBRARY_SHARED)
+        message("Building executable and linking to shared library is not adviced.")
+    endif()
 endif()
 
-if(NOT BUILD_STATIC_LIB AND NOT BUILD_SHARED_LIB)
-    set(BUILD_STATIC_LIB ON)
+if(NOT BUILD_LIBRARY_STATIC AND NOT BUILD_LIBRARY_SHARED)
+    set(BUILD_LIBRARY_STATIC ON)
+    message("Both BUILD_LIBRARY_STATIC and BUILD_LIBRARY_SHARED were off.")
+    message("Defaulting to BUILD_LIBRARY_STATIC")
+endif()
+
+if(CMAKE_BUILD_TYPE MATCHES Release)
+    set(BUILD_STRIP_TARGETS)
+    message("Since CMAKE_BUILD_TYPE is Release.")
+    message("We are stripping both library and executable.")
 endif()
 
 if(MSVC)
@@ -51,20 +66,20 @@ set(EXE_SOURCES
     executable/src/main.cpp
 )
 
-set(LIB_NAME ${PROJECT_NAME}-static)
-
-if(BUILD_SHARED_LIB)
-    set(LIB_NAME ${PROJECT_NAME}-shared)
-    add_library(${LIB_NAME} SHARED ${LIB_SOURCES} ${LIB_HEADERS})
+if(BUILD_LIBRARY_SHARED)
+    add_library(${PROJECT_NAME} SHARED ${LIB_SOURCES} ${LIB_HEADERS})
+    add_library(${PROJECT_NAME}-shared ALIAS ${PROJECT_NAME})
 else()
-    add_library(${LIB_NAME} STATIC ${LIB_SOURCES} ${LIB_HEADERS})
+    add_library(${PROJECT_NAME} STATIC ${LIB_SOURCES} ${LIB_HEADERS})
+    add_library(${PROJECT_NAME}-static ALIAS ${PROJECT_NAME})
 endif()
 
-target_include_directories(${LIB_NAME} PUBLIC library/include)
+target_include_directories(${PROJECT_NAME} PUBLIC library/include)
+add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 if(BUILD_EXECUTABLE)
     add_executable(${PROJECT_NAME}-exe ${EXE_SOURCES})
-    target_link_libraries(${PROJECT_NAME}-exe PRIVATE ${LIB_NAME})
+    target_link_libraries(${PROJECT_NAME}-exe PRIVATE ${PROJECT_NAME}::${PROJECT_NAME})
 endif()
 
 add_custom_target(test
@@ -73,3 +88,34 @@ add_custom_target(test
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Running tests..."
 )
+
+if(BUILD_STRIP_TARGETS)
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_STRIP} $<TARGET_FILE:${PROJECT_NAME}>
+        COMMENT "Stripping symbols from ${PROJECT_NAME}"
+    )
+
+    if(BUILD_EXECUTABLE)
+        add_custom_command(TARGET ${PROJECT_NAME}-exe POST_BUILD
+            COMMAND ${CMAKE_STRIP} $<TARGET_FILE:${PROJECT_NAME}-exe>
+            COMMENT "Stripping symbols from ${PROJECT_NAME}-exe"
+        )
+    endif()
+endif()
+
+if(BUILD_INSTALL)
+    include(GNUInstallDirs)
+
+    install(FILES)
+    install(TARGETS ${PROJECT_NAME}
+        ARCHIVE DESTINATION lib
+        LIBRARY DESTINATION lib
+        RUNTIME DESTINATION bin
+    )
+
+    if(BUILD_EXECUTABLE)
+        install(TARGETS ${PROJECT_NAME}-exe
+            RUNTIME DESTINATION bin
+        )
+    endif()
+endif()
