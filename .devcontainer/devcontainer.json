@@ -1,0 +1,16 @@
+{
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "features": {
+    "ghcr.io/nordcominc/devcontainer-features/android-sdk:1": {
+      "extra_packages": "ndk;28.0.13004108 cmake;3.10.2.4988404",
+      "platform": "24",
+      "build_tools": "24.0.0"
+    },
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "21.0.5",
+      "jdkDistro": "graal"
+    },
+    "ghcr.io/devcontainers-extra/features/cmake:1": { }
+  },
+  "postStartCommand": "sudo apt update && sudo apt install clangd clang ccache ninja-build -y"
+}
