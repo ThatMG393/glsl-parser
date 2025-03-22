@@ -14,28 +14,28 @@ option(BUILD_INSTALL        "Install the built library and executable"        OF
 if(BUILD_LIBRARY_STATIC AND BUILD_LIBRARY_SHARED)
     set(BUILD_LIBRARY_SHARED ON)
     set(BUILD_LIBRARY_STATIC OFF)
-    message("Both BUILD_LIBRARY_STATIC and BUILD_LIBRARY_SHARED was set.")
-    message("Prioritizing BUILD_LIBRARY_SHARED")
+    message(STATUS "Both BUILD_LIBRARY_STATIC and BUILD_LIBRARY_SHARED was set.")
+    message(STATUS "Prioritizing BUILD_LIBRARY_SHARED")
 endif()
 
 if(BUILD_EXECUTABLE)
-    message("Since BUILD_EXECUTABLE was set, BUILD_INSTALL was automatically set.")
+    message(STATUS "Since BUILD_EXECUTABLE was set, BUILD_INSTALL was automatically set.")
     set(BUILD_INSTALL ON) # might not allow the user to turn off installing
     if (BUILD_LIBRARY_SHARED)
-        message("Building executable and linking to shared library is not adviced.")
+        message(STATUS "Building executable and linking to shared library is not adviced.")
     endif()
 endif()
 
 if(NOT BUILD_LIBRARY_STATIC AND NOT BUILD_LIBRARY_SHARED)
     set(BUILD_LIBRARY_STATIC ON)
-    message("Both BUILD_LIBRARY_STATIC and BUILD_LIBRARY_SHARED were off.")
-    message("Defaulting to BUILD_LIBRARY_STATIC")
+    message(STATUS "Both BUILD_LIBRARY_STATIC and BUILD_LIBRARY_SHARED were off.")
+    message(STATUS "Defaulting to BUILD_LIBRARY_STATIC")
 endif()
 
 if(CMAKE_BUILD_TYPE MATCHES Release)
     set(BUILD_STRIP_TARGETS)
-    message("Since CMAKE_BUILD_TYPE is Release.")
-    message("We are stripping both library and executable.")
+    message(STATUS "Since CMAKE_BUILD_TYPE is Release.")
+    message(STATUS "We are stripping both library and executable.")
 endif()
 
 if(MSVC)
@@ -80,6 +80,13 @@ add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 if(BUILD_EXECUTABLE)
     add_executable(${PROJECT_NAME}-exe ${EXE_SOURCES})
     target_link_libraries(${PROJECT_NAME}-exe PRIVATE ${PROJECT_NAME}::${PROJECT_NAME})
+
+    if(BUILD_LIBRARY_SHARED)
+        set_target_properties(${PROJECT_NAME}-exe PROPERTIES
+            INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
+            BUILD_WITH_INSTALL_RPATH TRUE
+        )
+    endif()
 endif()
 
 add_custom_target(test
@@ -106,16 +113,26 @@ endif()
 if(BUILD_INSTALL)
     include(GNUInstallDirs)
 
-    install(FILES)
+    install(FILES ${LIB_HEADERS}
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/glsl-parser
+    )
+
     install(TARGETS ${PROJECT_NAME}
-        ARCHIVE DESTINATION lib
-        LIBRARY DESTINATION lib
-        RUNTIME DESTINATION bin
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     )
 
     if(BUILD_EXECUTABLE)
         install(TARGETS ${PROJECT_NAME}-exe
-            RUNTIME DESTINATION bin
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         )
     endif()
 endif()
+
+message(STATUS "Build Configuration:")
+message(STATUS "  BUILD_LIBRARY_STATIC: ${BUILD_LIBRARY_STATIC}")
+message(STATUS "  BUILD_LIBRARY_SHARED: ${BUILD_LIBRARY_SHARED}")
+message(STATUS "  BUILD_EXECUTABLE: ${BUILD_EXECUTABLE}")
+message(STATUS "  BUILD_STRIP_TARGETS: ${BUILD_STRIP_TARGETS}")
+message(STATUS "  BUILD_INSTALL: ${BUILD_INSTALL}")
