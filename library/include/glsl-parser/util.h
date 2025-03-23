@@ -96,21 +96,25 @@ struct indent_aware_stringbuilder {
         size_t strLen = strlen(str);
         if (strLen == 0) return;
         
+        // Pre-allocate space for string + possible indentation
+        ensureCapacity(strLen + currentIndent);
+        
         for (size_t i = 0; i < strLen; ++i) {
             if (atLineStart) {
                 appendIndentation();
             }
             
-            ensureCapacity(1);
             buffer[length++] = str[i];
             
             if (str[i] == '\n') {
                 atLineStart = true;
+            } else {
+                atLineStart = false;
             }
         }
     }
 
-    void append(indent_aware_stringbuilder builder) {
+    void append(const indent_aware_stringbuilder& builder) {
         append(builder.toString());
     }
     
@@ -121,9 +125,7 @@ struct indent_aware_stringbuilder {
     
     const char* toString() const {
         // Ensure null termination
-        if (length >= capacity) {
-            const_cast<indent_aware_stringbuilder*>(this)->resize(length + 1);
-        }
+        const_cast<indent_aware_stringbuilder*>(this)->ensureCapacity(1);
         buffer[length] = '\0';
         return buffer;
     }
@@ -156,7 +158,12 @@ private:
     void resize(size_t newCapacity) {
         char* newBuffer = new char[newCapacity];
         if (buffer) {
-            std::memcpy(newBuffer, buffer, length);
+            // Copy existing content, limited by the smaller of length or newCapacity
+            size_t copySize = length;
+            if (copySize > newCapacity) {
+                copySize = newCapacity;
+            }
+            memcpy(newBuffer, buffer, copySize);
             delete[] buffer;
         }
         buffer = newBuffer;
@@ -174,7 +181,7 @@ private:
     }
     
     void appendIndentation() {
-        if (atLineStart && currentIndent > 0) {
+        if (currentIndent > 0) {
             ensureCapacity(currentIndent);
             for (int i = 0; i < currentIndent; ++i) {
                 buffer[length++] = ' ';
