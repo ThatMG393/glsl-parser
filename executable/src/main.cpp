@@ -715,8 +715,7 @@ int main(int argc, char **argv) {
         astTU *tu = p.parse(sources[i].shaderType);
         if (tu) {
             // printTU(tu);
-            converter converter;
-            printf("%s", converter.convertTU(tu));
+            printf("%s", converter().convertTU(tu));
         } else {
             fprintf(stderr, "%s\n", p.error());
         }

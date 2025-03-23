@@ -10,26 +10,13 @@
 
 namespace glsl {
 
-const std::vector<const char*> operatorMap[18] = {
-    {}, // 0 (unused)
-    {","}, // 1
-    {"=", "+=", "-=", "*=", "/=", "%=", "<<=", ">>=", "&=", "^=", "|="}, // 2
-    {"?", ":"}, // 3
-    {"||"}, // 4
-    {"^^"}, // 5
-    {"&&"}, // 6
-    {"|"}, // 7
-    {"^"}, // 8
-    {"&"}, // 9
-    {"==", "!="}, // 10
-    {"<", ">", "<=", ">="}, // 11
-    {"<<", ">>"}, // 12
-    {"+", "-"}, // 13 (Note: unary + and - are 15)
-    {"*", "/", "%"}, // 14
-    {"++", "--", "~", "!"}, // 15 (Note: post-fix ++ and -- are 16)
-    {"[", "]", "."}, // 16
-    {"(", ")"}, // 17
+#undef OPERATOR
+#define OPERATOR(N, S, P) S,
+static const char *operatorMap[] = {
+    #include "glsl-parser/lexemes.h"
 };
+#undef OPERATOR
+#define OPERATOR(...)
 
 enum {
     kSemicolon = 1 << 0,
@@ -37,8 +24,9 @@ enum {
     kDefault = kSemicolon | kNewLine
 };
 
+inline void astExpressionToString(astExpression*, indent_aware_stringbuilder&);
 inline void astVariableToString(astVariable*, indent_aware_stringbuilder&, bool);
-inline void astStatementToString(astStatement*, indent_aware_stringbuilder&);
+inline void astStatementToString(astStatement*, indent_aware_stringbuilder&, int = kDefault);
 
 inline const char* profileToString(int type) {
     switch (type) {
@@ -92,7 +80,7 @@ inline const char* memoryToString(int memory) {
     return "";
 }
 
-inline const char* typeToString(astType* type) {
+inline const char* astTypeToString(astType* type) {
     if (type->builtin) {
         astBuiltin* builtin = static_cast<astBuiltin*>(type);
         switch (builtin->type) {
@@ -136,8 +124,33 @@ inline const char* typeToString(astType* type) {
     return "unknown_type";
 }
 
+inline void expandParameters(vector<astExpression*> parameters, indent_aware_stringbuilder& sb) {
+    sb += "(";
+    if (!parameters.size()) {
+        for (size_t i = 0; i < parameters.size(); ++i) {
+            astExpression* parameterExpression = parameters[i];
+            astExpressionToString(parameterExpression, sb);
+            if (i != parameters.size() - 1)
+                sb += ", ";
+        }
+    }
+    sb += ")";
+}
+
+inline void incrementExpression(astUnaryExpression* expr, indent_aware_stringbuilder& sb, bool post) {
+    if (!post) sb += operatorMap[5];
+    astExpressionToString(expr, sb);
+    if (post) sb += operatorMap[5];
+}
+
+
+inline void decrementExpression(astUnaryExpression* expr, indent_aware_stringbuilder& sb, bool post) {
+    if (!post) sb += operatorMap[6];
+    astExpressionToString(expr->operand, sb);
+    if (post) sb += operatorMap[6];
+}
+
 inline void astExpressionToString(astExpression* expression, indent_aware_stringbuilder& sb) {
-	printf("astExpression(%i)\n", expression->type);
     switch (expression->type) {
         case EXPRC(Int):
             sb += ntoa("%i", reinterpret_cast<astIntConstant*>(expression)->value);
@@ -148,11 +161,19 @@ inline void astExpressionToString(astExpression* expression, indent_aware_string
         break;
         
         case EXPRC(Float):
-            sb += ntoa("%f", reinterpret_cast<astFloatConstant*>(expression)->value);
+        {
+            astFloatConstant* floatExpression = reinterpret_cast<astFloatConstant*>(expression);
+            char format[1024];
+            snprintf(format, sizeof format, "%g", floatExpression->value);
+            if (!strchr(format, '.'))
+                sb += ntoa("%g.0", floatExpression->value);
+            else
+                sb += ntoa("%f", format);
+        }
         break;
 
         case EXPRC(Double):
-            sb += ntoa("%f", reinterpret_cast<astDoubleConstant*>(expression)->value);
+            sb += ntoa("%g", reinterpret_cast<astDoubleConstant*>(expression)->value);
         break;
 
         case EXPRC(Bool):
@@ -161,6 +182,89 @@ inline void astExpressionToString(astExpression* expression, indent_aware_string
         
         case EXPRN(VariableIdentifier):
             astVariableToString(reinterpret_cast<astVariableIdentifier*>(expression)->variable, sb, true);
+        break;
+
+        case EXPRN(FieldOrSwizzle):
+        {
+            astFieldOrSwizzle* fieldOrSwizzleExpression = reinterpret_cast<astFieldOrSwizzle*>(expression);
+            astExpressionToString(fieldOrSwizzleExpression->operand, sb);
+            sb += ".";
+            sb += fieldOrSwizzleExpression->name;
+        }
+        break;
+
+        case EXPRN(ArraySubscript):
+        {
+            astArraySubscript* arraySubscriptExpression = reinterpret_cast<astArraySubscript*>(expression);
+            astExpressionToString(arraySubscriptExpression->operand, sb);
+            sb += "[";
+            astExpressionToString(arraySubscriptExpression->index, sb);
+            sb += "]";
+        }
+        break;
+
+        case EXPRN(FunctionCall):
+        {
+            astFunctionCall* functionCallExpression = reinterpret_cast<astFunctionCall*>(expression);
+            sb += functionCallExpression->name;
+            expandParameters(functionCallExpression->parameters, sb);
+        }
+        break;
+
+        case EXPRN(ConstructorCall):
+        {
+            astConstructorCall* constructorCallExpression = reinterpret_cast<astConstructorCall*>(expression);
+            sb += astTypeToString(constructorCallExpression->type);
+            expandParameters(constructorCallExpression->parameters, sb);
+        }
+        break;
+
+        case EXPRN(PostIncrement):
+            incrementExpression(
+                reinterpret_cast<astPostIncrementExpression*>(expression), 
+                sb, true
+            );
+        break;
+
+        case EXPRN(PostDecrement):
+            decrementExpression(
+                reinterpret_cast<astPostDecrementExpression*>(expression), 
+                sb, true
+            );
+        break;
+
+        case EXPRN(UnaryMinus):
+            sb += operatorMap[13];
+            astExpressionToString(reinterpret_cast<astUnaryMinusExpression*>(expression)->operand, sb);
+        break;
+
+        case EXPRN(UnaryPlus):
+            sb += operatorMap[12];
+            astExpressionToString(reinterpret_cast<astUnaryPlusExpression*>(expression)->operand, sb);
+        break;
+
+        case EXPRN(BitNot):
+            sb += operatorMap[7];
+            astExpressionToString(reinterpret_cast<astUnaryBitNotExpression*>(expression)->operand, sb);
+        break;
+
+        case EXPRN(LogicalNot):
+            sb += operatorMap[8];
+            astExpressionToString(reinterpret_cast<astUnaryLogicalNotExpression*>(expression)->operand, sb);
+        break;
+
+        case EXPRN(PrefixIncrement):
+            incrementExpression(
+                reinterpret_cast<astPrefixIncrementExpression*>(expression), 
+                sb, false
+            );
+        break;
+
+        case EXPRN(PrefixDecrement):
+            decrementExpression(
+                reinterpret_cast<astPrefixDecrementExpression*>(expression), 
+                sb, false
+            );
         break;
 
         case EXPRN(Assign):
@@ -172,15 +276,40 @@ inline void astExpressionToString(astExpression* expression, indent_aware_string
         }
         break;
 
+        case EXPRN(Sequence):
+        {
+            astSequenceExpression* sequenceExpression = reinterpret_cast<astSequenceExpression*>(expression);
+            sb += "(";
+            astExpressionToString(sequenceExpression->operand1, sb);
+            sb += ", ";
+            astExpressionToString(sequenceExpression->operand2, sb);
+            sb += ")";
+        }
+        break;
+
         case EXPRN(Operation):
         {
         	astOperationExpression* operationExpression = reinterpret_cast<astOperationExpression*>(expression);
         	astExpressionToString(operationExpression->operand1, sb);
             sb += " ";
-            sb += operatorMap[operationExpression->operation][0];
+            sb += operatorMap[operationExpression->operation];
             sb += " ";
             astExpressionToString(operationExpression->operand2, sb);
         }
+
+        case EXPRN(Ternary):
+        {
+            astTernaryExpression* ternaryExpression = reinterpret_cast<astTernaryExpression*>(expression);
+            sb += "(";
+            astExpressionToString(ternaryExpression->condition, sb);
+            sb += " ? ";
+            astExpressionToString(ternaryExpression->onTrue, sb);
+            sb += " : ";
+            astExpressionToString(ternaryExpression->onFalse, sb);
+            sb += ")";
+        }
+        break;
+
         break;
     }
 }
@@ -192,7 +321,7 @@ inline void astVariableToString(astVariable* var, indent_aware_stringbuilder& sb
         return;
     }
 
-    sb += typeToString(var->baseType);
+    sb += astTypeToString(var->baseType);
     sb += " ";
     sb += var->name;
 
@@ -218,20 +347,14 @@ inline void astFunctionVariableToString(astFunctionVariable* var, indent_aware_s
     if (flags & kNewLine) sb.appendLine();
 }
 
-inline void astDeclarationStatementToString(astDeclarationStatement* declStatement, indent_aware_stringbuilder& sb) {
-    for (const auto& variable : declStatement->variables) {
-        astFunctionVariableToString(variable, sb, kSemicolon);
-    }
-}
-
 inline void astSwitchStatementToString(astSwitchStatement* switchStatement, indent_aware_stringbuilder& sb) {
-    sb += "switch(";
+    sb += "switch (";
     astExpressionToString(switchStatement->expression, sb);
     sb.appendLine(") {");
     sb.pushIndent();
 
     for (const auto& statement : switchStatement->statements) {
-        astStatementToString(statement, sb);
+        astStatementToString(statement, sb, kSemicolon);
         sb.appendLine();
     }
 
@@ -251,7 +374,21 @@ inline void astCaseLabelStatementToString(astCaseLabelStatement* caseLabelStatem
     sb.pushIndent();
 }
 
-inline void astStatementToString(astStatement* statement, indent_aware_stringbuilder& sb) {
+inline void astExpressionStatementToString(astExpressionStatement* exprStatement, indent_aware_stringbuilder& sb, int flags = kDefault) {
+    astExpressionToString(exprStatement->expression, sb);
+    
+    if (flags & kSemicolon) sb += ";";
+    if (flags & kNewLine) sb.appendLine();
+}
+
+inline void astWhileStatementToString(astWhileStatement* whileStatement, indent_aware_stringbuilder& sb) {
+    sb += "while (";
+    astStatementToString(whileStatement->condition, sb, false);
+    sb += ") ";
+    astStatementToString(whileStatement->body, sb);
+}
+
+inline void astStatementToString(astStatement* statement, indent_aware_stringbuilder& sb, int flags) {
     switch (statement->type) {
         case STATEMENT(Empty):
             sb += ";";
@@ -269,12 +406,26 @@ inline void astStatementToString(astStatement* statement, indent_aware_stringbui
             sb.popIndent();
         break;
 
+        case STATEMENT(Compound):
+            sb.appendLine("{");
+            sb.pushIndent();
+
+            for (const auto& compoundStatement : reinterpret_cast<astCompoundStatement*>(statement)->statements) {
+                astStatementToString(compoundStatement, sb);
+            }
+
+            sb.popIndent();
+            sb.appendLine("}");
+        break;
+
         case STATEMENT(Declaration):
-            astDeclarationStatementToString(reinterpret_cast<astDeclarationStatement*>(statement), sb);
+            for (const auto& variable : reinterpret_cast<astDeclarationStatement*>(statement)->variables) {
+                astFunctionVariableToString(variable, sb, flags);
+            }
         break;
 
         case STATEMENT(Expression):
-            astExpressionToString(reinterpret_cast<astExpression*>(statement), sb);
+            astExpressionStatementToString(reinterpret_cast<astExpressionStatement*>(statement), sb, flags);
         break;
 
         case STATEMENT(Switch):
@@ -283,6 +434,10 @@ inline void astStatementToString(astStatement* statement, indent_aware_stringbui
 
         case STATEMENT(CaseLabel):
             astCaseLabelStatementToString(reinterpret_cast<astCaseLabelStatement*>(statement), sb);
+        break;
+
+        case STATEMENT(While):
+            astWhileStatementToString(reinterpret_cast<astWhileStatement*>(statement), sb);
         break;
     }
 }
@@ -409,7 +564,7 @@ void converter::visitGlobalVariables(astTU* tu) {
 
 void converter::visitFunctions(astTU* tu) {
     for (const auto& function : tu->functions) {
-        stringBuffer += typeToString(function->returnType);
+        stringBuffer += astTypeToString(function->returnType);
         stringBuffer += " ";
         stringBuffer += function->name;
 

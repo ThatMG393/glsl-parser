@@ -268,49 +268,49 @@ KEYWORD(using)
 
 
 // Operators
-// name, string, precedence
-OPERATOR(paranthesis_begin,  "(",   17)
-OPERATOR(paranthesis_end,    ")",   17)
-OPERATOR(bracket_begin,      "[",   16)
-OPERATOR(bracket_end,        "]",   16)
-OPERATOR(dot,                ".",   16)
-OPERATOR(increment,          "++",  15) // Note: 16 when used as post-fix
-OPERATOR(decrement,          "--",  15) // Note: 16 when used as post-fix
-OPERATOR(bit_not,            "~",   15)
-OPERATOR(logical_not,        "!",   15)
-OPERATOR(multiply,           "*",   14)
-OPERATOR(divide,             "/",   14)
-OPERATOR(modulus,            "%",   14)
-OPERATOR(plus,               "+",   13) // Note: 15 when unary
-OPERATOR(minus,              "-",   13) // Note: 15 when unary
-OPERATOR(shift_left,         "<<",  12)
-OPERATOR(shift_right,        ">>",  12)
-OPERATOR(less,               "<",   11)
-OPERATOR(greater,            ">",   11)
-OPERATOR(less_equal,         "<=",  11)
-OPERATOR(greater_equal,      ">=",  11)
-OPERATOR(equal,              "==",  10)
-OPERATOR(not_equal,          "!=",  10)
-OPERATOR(bit_and,            "&",   9)
-OPERATOR(bit_xor,            "^",   8)
-OPERATOR(bit_or,             "|",   7)
-OPERATOR(logical_and,        "&&",  6)
-OPERATOR(logical_xor,        "^^",  5)
-OPERATOR(logical_or,         "||",  4)
-OPERATOR(questionmark,       "?",   3)
-OPERATOR(colon,              ":",   3)
-OPERATOR(assign,             "=",   2)
-OPERATOR(add_assign,         "+=",  2)
-OPERATOR(sub_assign,         "-=",  2)
-OPERATOR(multiply_assign,    "*=",  2)
-OPERATOR(divide_assign,      "/=",  2)
-OPERATOR(modulus_assign,     "%=",  2)
-OPERATOR(shift_left_assign,  "<<=", 2)
-OPERATOR(shift_right_assign, ">>=", 2)
-OPERATOR(bit_and_assign,     "&=",  2)
-OPERATOR(bit_xor_assign,     "^=",  2)
-OPERATOR(bit_or_assign,      "|=",  2)
-OPERATOR(comma,              ",",   1)
+//       name,              sign, precedence, array index (n + 1)
+OPERATOR(paranthesis_begin,  "(",       17) // 1
+OPERATOR(paranthesis_end,    ")",       17) // 2
+OPERATOR(bracket_begin,      "[",       16) // 3
+OPERATOR(bracket_end,        "]",       16) // 4
+OPERATOR(dot,                ".",       16) // 5
+OPERATOR(increment,          "++",      15) // 6 // Note: 16 when used as post-fix
+OPERATOR(decrement,          "--",      15) // 7 // Note: 16 when used as post-fix
+OPERATOR(bit_not,            "~",       15) // 8
+OPERATOR(logical_not,        "!",       15) // 9
+OPERATOR(multiply,           "*",       14) // 10
+OPERATOR(divide,             "/",       14) // 11
+OPERATOR(modulus,            "%",       14) // 12
+OPERATOR(plus,               "+",       13) // 13 // Note: 15 when unary
+OPERATOR(minus,              "-",       13) // 14 // Note: 15 when unary
+OPERATOR(shift_left,         "<<",      12) // 15
+OPERATOR(shift_right,        ">>",      12) // 16
+OPERATOR(less,               "<",       11) // 17
+OPERATOR(greater,            ">",       11) // 18
+OPERATOR(less_equal,         "<=",      11) // 19
+OPERATOR(greater_equal,      ">=",      11) // 20
+OPERATOR(equal,              "==",      10) // 21
+OPERATOR(not_equal,          "!=",      10) // 22
+OPERATOR(bit_and,            "&",       9)  // 23
+OPERATOR(bit_xor,            "^",       8)  // 24
+OPERATOR(bit_or,             "|",       7)  // 25
+OPERATOR(logical_and,        "&&",      6)  // 26
+OPERATOR(logical_xor,        "^^",      5)  // 27
+OPERATOR(logical_or,         "||",      4)  // 28
+OPERATOR(questionmark,       "?",       3)  // 29
+OPERATOR(colon,              ":",       3)  // 30
+OPERATOR(assign,             "=",       2)  // 31
+OPERATOR(add_assign,         "+=",      2)  // 32
+OPERATOR(sub_assign,         "-=",      2)  // 33
+OPERATOR(multiply_assign,    "*=",      2)  // 34
+OPERATOR(divide_assign,      "/=",      2)  // 35
+OPERATOR(modulus_assign,     "%=",      2)  // 36
+OPERATOR(shift_left_assign,  "<<=",     2)  // 37
+OPERATOR(shift_right_assign, ">>=",     2)  // 38
+OPERATOR(bit_and_assign,     "&=",      2)  // 39
+OPERATOR(bit_xor_assign,     "^=",      2)  // 40
+OPERATOR(bit_or_assign,      "|=",      2)  // 41
+OPERATOR(comma,              ",",       1)  // 42
 
 TYPENAME(void)
 TYPENAME(bool)
