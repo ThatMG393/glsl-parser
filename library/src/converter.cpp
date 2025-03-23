@@ -296,6 +296,7 @@ inline void astExpressionToString(astExpression* expression, indent_aware_string
             sb += " ";
             astExpressionToString(operationExpression->operand2, sb);
         }
+        break;
 
         case EXPRN(Ternary):
         {
@@ -388,6 +389,38 @@ inline void astWhileStatementToString(astWhileStatement* whileStatement, indent_
     astStatementToString(whileStatement->body, sb);
 }
 
+inline void astDoStatementToString(astDoStatement* doStatement, indent_aware_stringbuilder& sb) {
+    sb += "do";
+    if (doStatement->body->type != STATEMENT(Compound)) sb += " ";
+    astStatementToString(doStatement->body, sb);
+    sb += "while (";
+    astExpressionToString(doStatement->condition, sb);
+    sb += ") ";
+    
+}
+
+inline void astForStatementToString(astForStatement* forStatement, indent_aware_stringbuilder& sb) {
+    sb += "for (";
+
+    if (forStatement->init) {
+        astStatementToString(forStatement->init, sb);
+    } else {
+        sb += ";";
+    }
+
+    if (forStatement->condition) {
+        sb += " ";
+        astExpressionToString(forStatement->condition, sb);
+    }
+    sb += ";";
+    if (forStatement->loop) {
+        sb += " ";
+        astExpressionToString(forStatement->loop, sb);
+    }
+    sb += ")";
+    astStatementToString(forStatement->body, sb);
+}
+
 inline void astStatementToString(astStatement* statement, indent_aware_stringbuilder& sb, int flags) {
     switch (statement->type) {
         case STATEMENT(Empty):
@@ -439,18 +472,16 @@ inline void astStatementToString(astStatement* statement, indent_aware_stringbui
         case STATEMENT(While):
             astWhileStatementToString(reinterpret_cast<astWhileStatement*>(statement), sb);
         break;
+
+        case STATEMENT(Do):
+            astDoStatementToString(reinterpret_cast<astDoStatement*>(statement), sb);
+        break;
+
+        case STATEMENT(For):
+            astForStatementToString(reinterpret_cast<astForStatement*>(statement), sb);
+        break;
     }
 }
-
-
-
-
-
-
-
-
-
-
 
 converter::converter() : stringBuffer(indent_aware_stringbuilder()) { }
 
@@ -589,8 +620,6 @@ void converter::visitFunctions(astTU* tu) {
 
         for (const auto& statement : function->statements) {
             astStatementToString(statement, stringBuffer);
-            // stringBuffer.appendLine(statement->name());
-            // stringBuffer.appendLine();
         }
 
         stringBuffer.popIndent();
