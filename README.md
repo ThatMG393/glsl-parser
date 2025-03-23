@@ -45,12 +45,12 @@ Check out the superior diagnostics [here](EXAMPLE_ERRORS.md)
 
 ### Portable and embeddable
   * Written in portable C++11.
-    * Uses *'std::vector'* from the standard library
-    * Uses *'for range'* loops
-    * Uses the *'auto'* type
+    * Uses *'std::vector'* from the standard library.
+    * Uses *'for range'* loops.
+    * Uses the *'auto'* type.
   * Exception free
   * Doesn't use virtual functions
-  * Small (~90 KB)
+  * Small (~200 KB)
   * Permissive (MIT)
 
 ### Building
