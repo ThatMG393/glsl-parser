@@ -69,6 +69,7 @@ set(LIB_HEADERS
 
 set(EXE_SOURCES
     executable/src/main.cpp
+    executable/src/old.cpp
 )
 
 if(BUILD_LIBRARY_SHARED)

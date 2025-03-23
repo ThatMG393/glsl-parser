@@ -10,9 +10,17 @@
 
 namespace glsl {
 
+#undef KEYWORD
+#define KEYWORD(X) #X,
+static const char* builtinKeywordMap[] = {
+    #include "glsl-parser/lexemes.h"
+};
+#undef KEYWORD
+#define KEYWORD(...)
+
 #undef OPERATOR
 #define OPERATOR(N, S, P) S,
-static const char *operatorMap[] = {
+static const char* operatorMap[] = {
     #include "glsl-parser/lexemes.h"
 };
 #undef OPERATOR
@@ -83,40 +91,7 @@ inline const char* memoryToString(int memory) {
 inline const char* astTypeToString(astType* type) {
     if (type->builtin) {
         astBuiltin* builtin = static_cast<astBuiltin*>(type);
-        switch (builtin->type) {
-            case kKeyword_void: return "void";
-            case kKeyword_bool: return "bool";
-            case kKeyword_int: return "int";
-            case kKeyword_uint: return "uint";
-            case kKeyword_float: return "float";
-            case kKeyword_double: return "double";
-            case kKeyword_vec2: return "vec2";
-            case kKeyword_vec3: return "vec3";
-            case kKeyword_vec4: return "vec4";
-            case kKeyword_ivec2: return "ivec2";
-            case kKeyword_ivec3: return "ivec3";
-            case kKeyword_ivec4: return "ivec4";
-            case kKeyword_uvec2: return "uvec2";
-            case kKeyword_uvec3: return "uvec3";
-            case kKeyword_uvec4: return "uvec4";
-            case kKeyword_bvec2: return "bvec2";
-            case kKeyword_bvec3: return "bvec3";
-            case kKeyword_bvec4: return "bvec4";
-            case kKeyword_mat2: return "mat2";
-            case kKeyword_mat3: return "mat3";
-            case kKeyword_mat4: return "mat4";
-            case kKeyword_mat2x3: return "mat2x3";
-            case kKeyword_mat2x4: return "mat2x4";
-            case kKeyword_mat3x2: return "mat3x2";
-            case kKeyword_mat3x4: return "mat3x4";
-            case kKeyword_mat4x2: return "mat4x2";
-            case kKeyword_mat4x3: return "mat4x3";
-            case kKeyword_sampler2D: return "sampler2D";
-            case kKeyword_sampler3D: return "sampler3D";
-            case kKeyword_samplerCube: return "samplerCube";
-            case kKeyword_sampler2DShadow: return "sampler2DShadow";
-            default: return "unknown_type";
-        }
+        return builtinKeywordMap[builtin->type];
     } else if (astStruct* structure = reinterpret_cast<astStruct*>(type)) {
         return structure->name;
     }
@@ -139,7 +114,7 @@ inline void expandParameters(vector<astExpression*> parameters, indent_aware_str
 
 inline void incrementExpression(astUnaryExpression* expr, indent_aware_stringbuilder& sb, bool post) {
     if (!post) sb += operatorMap[5];
-    astExpressionToString(expr, sb);
+    astExpressionToString(expr->operand, sb);
     if (post) sb += operatorMap[5];
 }
 
@@ -310,8 +285,6 @@ inline void astExpressionToString(astExpression* expression, indent_aware_string
             sb += ")";
         }
         break;
-
-        break;
     }
 }
 
@@ -390,34 +363,33 @@ inline void astWhileStatementToString(astWhileStatement* whileStatement, indent_
 }
 
 inline void astDoStatementToString(astDoStatement* doStatement, indent_aware_stringbuilder& sb) {
-    sb += "do";
-    if (doStatement->body->type != STATEMENT(Compound)) sb += " ";
-    astStatementToString(doStatement->body, sb);
+    sb += "do ";
+    astStatementToString(doStatement->body, sb, kSemicolon);
+    if (doStatement->body->type == STATEMENT(Compound)) sb += " ";
     sb += "while (";
     astExpressionToString(doStatement->condition, sb);
-    sb += ") ";
-    
+    sb.appendLine(");");
 }
 
 inline void astForStatementToString(astForStatement* forStatement, indent_aware_stringbuilder& sb) {
     sb += "for (";
 
-    if (forStatement->init) {
-        astStatementToString(forStatement->init, sb);
+    if (forStatement->init) { // for (<statement>)
+        astStatementToString(forStatement->init, sb, false);
     } else {
-        sb += ";";
+        sb += ";;"; // for (;;)
     }
 
-    if (forStatement->condition) {
-        sb += " ";
+    if (forStatement->condition) { // for (<statement>[;]<condition>)
+        sb += "; ";
         astExpressionToString(forStatement->condition, sb);
     }
-    sb += ";";
-    if (forStatement->loop) {
-        sb += " ";
+
+    if (forStatement->loop) { // for (<statement>[;]<condition>[;]<loop>)
+        sb += "; ";
         astExpressionToString(forStatement->loop, sb);
     }
-    sb += ")";
+    sb += ") ";
     astStatementToString(forStatement->body, sb);
 }
 
@@ -440,15 +412,24 @@ inline void astStatementToString(astStatement* statement, indent_aware_stringbui
         break;
 
         case STATEMENT(Compound):
-            sb.appendLine("{");
-            sb.pushIndent();
+        {
+            astCompoundStatement* compoundStatements = reinterpret_cast<astCompoundStatement*>(statement);
 
-            for (const auto& compoundStatement : reinterpret_cast<astCompoundStatement*>(statement)->statements) {
-                astStatementToString(compoundStatement, sb);
+            if (!compoundStatements->statements.size()) {
+                sb.append("{");
+                sb.appendLine(" }");
+            } else {
+                sb.appendLine("{");
+                sb.pushIndent();
+
+                for (const auto& compoundStatement : compoundStatements->statements) {
+                    astStatementToString(compoundStatement, sb);
+                }
+
+                sb.popIndent();
+                sb.appendLine("}");
             }
-
-            sb.popIndent();
-            sb.appendLine("}");
+        }
         break;
 
         case STATEMENT(Declaration):
