@@ -3,7 +3,12 @@
 #include "glsl-parser/lexer.h"
 #include "glsl-parser/util.h"
 
+#define EXPRC(type) astExpression::k##type##Constant
+#define EXPRN(type) astExpression::k##type
+
 namespace glsl {
+
+inline indent_aware_stringbuilder astVariableToString(astVariable*, indent_aware_stringbuilder&, bool);
 
 inline const char* getProfile(int type) {
     switch (type) {
@@ -75,19 +80,33 @@ inline const char* typeToString(astType* type) {
             case kKeyword_sampler2DShadow: return "sampler2DShadow";
             default: return "unknown_type";
         }
-    } else if (astStruct* str = static_cast<astStruct*>(type)) {
-        return str->name;
-    } else if (astInterfaceBlock* block = static_cast<astInterfaceBlock*>(type)) {
-        return block->name;
     }
+
     return "unknown_type";
 }
 
-inline const char* astExpressionToString(astExpression* expression) {
+inline const char* fieldOrSwizzleToString(astFieldOrSwizzle*, indent_aware_stringbuilder&);
+
+inline const char* astExpressionToString(astExpression* expression, indent_aware_stringbuilder& sb) {
     switch (expression->type) {
-        case astExpression::kIntConstant: return itoa(reinterpret_cast<astIntConstant*>(expression)->value);
+        case EXPRC(Int): return ntoa("%i", reinterpret_cast<astIntConstant*>(expression)->value);
+        case EXPRC(UInt): return ntoa("%u", reinterpret_cast<astUIntConstant*>(expression)->value);
+        case EXPRC(Float): return ntoa("%f", reinterpret_cast<astFloatConstant*>(expression)->value);
+        case EXPRC(Double): return ntoa("%f", reinterpret_cast<astDoubleConstant*>(expression)->value);
+        case EXPRC(Bool): return reinterpret_cast<astBoolConstant*>(expression)->value ? "true" : "false";
+        
+        // potentially unsafe
+        case EXPRN(VariableIdentifier): return astVariableToString(reinterpret_cast<astVariableIdentifier*>(expression)->variable, sb, true).toString();
+        case EXPRN(FieldOrSwizzle): fieldOrSwizzleToString(reinterpret_cast<astFieldOrSwizzle*>(expression), sb);
+        case EXPRN(ArraySubscript): break;
         default: return "";
     }
+    return "";
+}
+
+inline const char* fieldOrSwizzleToString(astFieldOrSwizzle *expression, indent_aware_stringbuilder& sb) {
+    astExpressionToString(expression->operand, sb);
+    expression->name;
 }
 
 inline indent_aware_stringbuilder astVariableToString(astVariable* var, indent_aware_stringbuilder& prevSb, bool nameOnly = false) {
@@ -107,7 +126,7 @@ inline indent_aware_stringbuilder astVariableToString(astVariable* var, indent_a
     if (var->isArray) {
         for (const auto& arraySize : var->arraySizes) {
             sb += "[";
-            sb += astExpressionToString(arraySize);
+            sb += astExpressionToString(arraySize, sb);
             sb += "]";
         }
     }
@@ -148,7 +167,7 @@ const char* converter::convertTU(astTU* translationUnit) {
 void converter::visitPreprocessors(astTU* tu) {
     if (tu->versionDirective) {
         stringBuffer += "#version ";
-        stringBuffer += itoa(tu->versionDirective->version);
+        stringBuffer += ntoa("%d", tu->versionDirective->version);
         stringBuffer += " ";
         stringBuffer += getProfile(tu->versionDirective->type);
         stringBuffer.appendLine();

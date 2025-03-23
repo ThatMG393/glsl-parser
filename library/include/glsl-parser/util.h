@@ -17,12 +17,17 @@ static inline I find(I first, I last, const T &value) {
     return last;
 }
 
-// An implementation of itoa
+// An implementation of ntoa (number to ascii)
 // Remember to free the string!
-static inline char* itoa(int x) {
-    int length = snprintf(NULL, 0, "%d", x);
+
+// ntoa("%d", 1); // integer
+template <typename T>
+static inline char* ntoa(const char* fmt, T x) {
+    if (!strlen(fmt)) return nullptr;
+
+    int length = snprintf(NULL, 0, fmt, x);
     char* str = reinterpret_cast<char*>(malloc(length + 1));
-    snprintf(str, length + 1, "%d", x);
+    snprintf(str, length + 1, fmt, x);
     return str;
 }
 
