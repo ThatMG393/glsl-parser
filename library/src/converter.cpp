@@ -332,7 +332,7 @@ inline void astSwitchStatementToString(astSwitchStatement* switchStatement, inde
     sb.pushIndent();
 
     for (const auto& statement : switchStatement->statements) {
-        astStatementToString(statement, sb, kSemicolon);
+        astStatementToString(statement, sb, kSemicolon | kPopIndent);
         sb.appendLine();
     }
 
