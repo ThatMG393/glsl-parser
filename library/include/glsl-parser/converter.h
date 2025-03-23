@@ -18,6 +18,7 @@ private:
     void visitStructures(astTU*);
     void visitInterfaceBlocks(astTU*);
     void visitGlobalVariables(astTU*);
+    void visitFunctions(astTU*);
 };
 
 }

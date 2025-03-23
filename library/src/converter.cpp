@@ -600,11 +600,7 @@ const char* converter::convertTU(astTU* translationUnit) {
     visitStructures(translationUnit);
     visitInterfaceBlocks(translationUnit);
     visitGlobalVariables(translationUnit);
-    
-    for (const auto& function : translationUnit->functions) {
-        astFunctionToString(function, stringBuffer);
-        stringBuffer.appendLine();
-    }
+    visitFunctions(translationUnit);
     
     return stringBuffer.toString();
 }
@@ -713,6 +709,13 @@ void converter::visitGlobalVariables(astTU* tu) {
         }
 
         stringBuffer.appendLine(";");
+    }
+}
+
+void converter::visitFunctions(astTU* tu) {
+    for (const auto& function : tu->functions) {
+        astFunctionToString(function,stringBuffer);
+        stringBuffer.appendLine();
     }
 }
 
