@@ -18,7 +18,6 @@ if(BUILD_LIBRARY_STATIC AND BUILD_LIBRARY_SHARED)
 endif()
 
 if(BUILD_EXECUTABLE)
-    message(STATUS "Since BUILD_EXECUTABLE was set, BUILD_INSTALL was automatically set.")
     if (BUILD_LIBRARY_SHARED)
         message(STATUS "Building executable and linking to shared library is not adviced.")
     endif()
