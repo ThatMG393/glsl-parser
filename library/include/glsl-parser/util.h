@@ -63,6 +63,11 @@ struct indent_aware_stringbuilder {
     indent_aware_stringbuilder() : buffer(NULL), capacity(0), length(0), currentIndent(0), atLineStart(true) {
         resize(16);
     }
+
+    indent_aware_stringbuilder(indent_aware_stringbuilder& other) {
+        this->indentStack = other.indentStack;
+        this->currentIndent = other.currentIndent;
+    }
     
     ~indent_aware_stringbuilder() {
         delete[] buffer;

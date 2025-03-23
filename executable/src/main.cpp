@@ -1,6 +1,7 @@
 #include <stdio.h>  // fread, fclose, fprintf, stderr
 #include <string.h> // strcmp, memcpy
 
+#include "glsl-parser/converter.h"
 #include "glsl-parser/parser.h"
 
 using namespace glsl;
@@ -713,7 +714,9 @@ int main(int argc, char **argv) {
         parser p(&contents[0], sources[i].fileName);
         astTU *tu = p.parse(sources[i].shaderType);
         if (tu) {
-            printTU(tu);
+            // printTU(tu);
+            converter converter;
+            printf("%s", converter.convertTU(tu));
         } else {
             fprintf(stderr, "%s\n", p.error());
         }

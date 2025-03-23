@@ -34,19 +34,25 @@ if(CMAKE_BUILD_TYPE MATCHES Release)
     set(BUILD_STRIP_TARGETS)
     message(STATUS "Since CMAKE_BUILD_TYPE is Release.")
     message(STATUS "We are stripping both library and executable.")
+
+    if(MSVC)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /O2")
+    else()
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+    endif()
 endif()
 
 if(MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR- /EHs- /W4 /O2")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR- /EHs- /W4")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
     set(COMPILER_SPECIFIC_OPTIONS /permissive- /Zc:preprocessor /W4)
 else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -fno-exceptions -Wall -Wextra -Wformat -O3")
-    set(COMPILER_SPECIFIC_OPTIONS "")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -fno-exceptions -Wall -Wextra -Wformat")
 endif()
 
 set(LIB_SOURCES
     library/src/ast.cpp
+    library/src/converter.cpp
     library/src/lexer.cpp
     library/src/parser.cpp
     library/src/util.cpp
@@ -54,6 +60,7 @@ set(LIB_SOURCES
 
 set(LIB_HEADERS
     library/include/glsl-parser/ast.h
+    library/include/glsl-parser/converter.h
     library/include/glsl-parser/lexemes.h
     library/include/glsl-parser/lexer.h
     library/include/glsl-parser/parser.h

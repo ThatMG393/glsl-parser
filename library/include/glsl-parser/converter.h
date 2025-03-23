@@ -16,6 +16,7 @@ private:
 
     void visitPreprocessors(astTU*);
     void visitStructs(astTU*);
+    void visitInterfaceBlocks(astTU*);
     void visitGlobals(astTU*);
 };
 
