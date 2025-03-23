@@ -29,7 +29,9 @@ static const char* operatorMap[] = {
 enum {
     kSemicolon = 1 << 0,
     kNewLine = 1 << 1,
-    kDefault = kSemicolon | kNewLine
+    kPopIndent = 1 << 2,
+    kCompoundChain = 1 << 3,
+    kDefault = kSemicolon | kNewLine | kPopIndent
 };
 
 inline void astExpressionToString(astExpression*, indent_aware_stringbuilder&);
@@ -246,7 +248,9 @@ inline void astExpressionToString(astExpression* expression, indent_aware_string
         {
             astAssignmentExpression* assignmentExpression = reinterpret_cast<astAssignmentExpression*>(expression);
             astExpressionToString(assignmentExpression->operand1, sb);
-            sb += " = ";
+            sb += " ";
+            sb += operatorMap[assignmentExpression->assignment];
+            sb += " ";
             astExpressionToString(assignmentExpression->operand2, sb);
         }
         break;
@@ -365,7 +369,7 @@ inline void astWhileStatementToString(astWhileStatement* whileStatement, indent_
 inline void astDoStatementToString(astDoStatement* doStatement, indent_aware_stringbuilder& sb) {
     sb += "do ";
     astStatementToString(doStatement->body, sb, kSemicolon);
-    if (doStatement->body->type == STATEMENT(Compound)) sb += " ";
+    if (doStatement->body->type != STATEMENT(Compound)) sb += " ";
     sb += "while (";
     astExpressionToString(doStatement->condition, sb);
     sb.appendLine(");");
@@ -393,6 +397,20 @@ inline void astForStatementToString(astForStatement* forStatement, indent_aware_
     astStatementToString(forStatement->body, sb);
 }
 
+inline void astIfStatementToString(astIfStatement* ifStatement, indent_aware_stringbuilder& sb) {
+	sb += "if (";
+	astExpressionToString(ifStatement->condition, sb);
+	sb += ") ";
+	astStatementToString(ifStatement->thenStatement, sb, kSemicolon | kNewLine | kCompoundChain);
+	if (ifStatement->thenStatement->type != STATEMENT(Compound)) sb.appendLine();
+
+	if (ifStatement->elseStatement) {
+		sb += " else ";
+		if (ifStatement->elseStatement->type == STATEMENT(If)) sb += " ";
+		astStatementToString(ifStatement->elseStatement, sb);
+	}
+}
+
 inline void astStatementToString(astStatement* statement, indent_aware_stringbuilder& sb, int flags) {
     switch (statement->type) {
         case STATEMENT(Empty):
@@ -400,15 +418,15 @@ inline void astStatementToString(astStatement* statement, indent_aware_stringbui
         break;
         case STATEMENT(Continue):
             sb += "continue;";
-            sb.popIndent();
+            if (flags & kPopIndent) sb.popIndent();
         break;
         case STATEMENT(Break):
             sb += "break;";
-            sb.popIndent();
+            if (flags & kPopIndent) sb.popIndent();
         break;
         case STATEMENT(Discard):
             sb += "discard;";
-            sb.popIndent();
+            if (flags & kPopIndent) sb.popIndent();
         break;
 
         case STATEMENT(Compound):
@@ -423,11 +441,12 @@ inline void astStatementToString(astStatement* statement, indent_aware_stringbui
                 sb.pushIndent();
 
                 for (const auto& compoundStatement : compoundStatements->statements) {
-                    astStatementToString(compoundStatement, sb);
+                    astStatementToString(compoundStatement, sb, flags);
                 }
 
                 sb.popIndent();
-                sb.appendLine("}");
+                if (flags & kCompoundChain) sb += "}";
+                else sb.appendLine("}");
             }
         }
         break;
@@ -460,6 +479,10 @@ inline void astStatementToString(astStatement* statement, indent_aware_stringbui
 
         case STATEMENT(For):
             astForStatementToString(reinterpret_cast<astForStatement*>(statement), sb);
+		break;
+
+        case STATEMENT(If):
+        	astIfStatementToString(reinterpret_cast<astIfStatement*>(statement), sb);
         break;
     }
 }
