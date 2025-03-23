@@ -7,6 +7,7 @@ void test() {
             break;
         case 1:
             int b = 879789789;
+            b += 1919;
             break;
     }
 

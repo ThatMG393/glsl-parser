@@ -10,6 +10,33 @@
 
 namespace glsl {
 
+const std::vector<const char*> operatorMap[18] = {
+    {}, // 0 (unused)
+    {","}, // 1
+    {"=", "+=", "-=", "*=", "/=", "%=", "<<=", ">>=", "&=", "^=", "|="}, // 2
+    {"?", ":"}, // 3
+    {"||"}, // 4
+    {"^^"}, // 5
+    {"&&"}, // 6
+    {"|"}, // 7
+    {"^"}, // 8
+    {"&"}, // 9
+    {"==", "!="}, // 10
+    {"<", ">", "<=", ">="}, // 11
+    {"<<", ">>"}, // 12
+    {"+", "-"}, // 13 (Note: unary + and - are 15)
+    {"*", "/", "%"}, // 14
+    {"++", "--", "~", "!"}, // 15 (Note: post-fix ++ and -- are 16)
+    {"[", "]", "."}, // 16
+    {"(", ")"}, // 17
+};
+
+enum {
+    kSemicolon = 1 << 0,
+    kNewLine = 1 << 1,
+    kDefault = kSemicolon | kNewLine
+};
+
 inline void astVariableToString(astVariable*, indent_aware_stringbuilder&, bool);
 inline void astStatementToString(astStatement*, indent_aware_stringbuilder&);
 
@@ -110,6 +137,7 @@ inline const char* typeToString(astType* type) {
 }
 
 inline void astExpressionToString(astExpression* expression, indent_aware_stringbuilder& sb) {
+	printf("astExpression(%i)\n", expression->type);
     switch (expression->type) {
         case EXPRC(Int):
             sb += ntoa("%i", reinterpret_cast<astIntConstant*>(expression)->value);
@@ -131,15 +159,28 @@ inline void astExpressionToString(astExpression* expression, indent_aware_string
             sb += reinterpret_cast<astBoolConstant*>(expression)->value ? "true" : "false";
         break;
         
-        case EXPRN(VariableIdentifier): 
+        case EXPRN(VariableIdentifier):
             astVariableToString(reinterpret_cast<astVariableIdentifier*>(expression)->variable, sb, true);
         break;
 
         case EXPRN(Assign):
+        {
             astAssignmentExpression* assignmentExpression = reinterpret_cast<astAssignmentExpression*>(expression);
             astExpressionToString(assignmentExpression->operand1, sb);
             sb += " = ";
             astExpressionToString(assignmentExpression->operand2, sb);
+        }
+        break;
+
+        case EXPRN(Operation):
+        {
+        	astOperationExpression* operationExpression = reinterpret_cast<astOperationExpression*>(expression);
+        	astExpressionToString(operationExpression->operand1, sb);
+            sb += " ";
+            sb += operatorMap[operationExpression->operation][0];
+            sb += " ";
+            astExpressionToString(operationExpression->operand2, sb);
+        }
         break;
     }
 }
@@ -164,12 +205,6 @@ inline void astVariableToString(astVariable* var, indent_aware_stringbuilder& sb
     }
 }
 
-enum {
-    kSemicolon = 1 << 0,
-    kNewLine = 1 << 1,
-    kDefault = kSemicolon | kNewLine
-};
-
 inline void astFunctionVariableToString(astFunctionVariable* var, indent_aware_stringbuilder& sb, int flags = kDefault) {
     if (var->isConst) sb += "const ";
     astVariableToString((astVariable*) var, sb);
@@ -185,7 +220,7 @@ inline void astFunctionVariableToString(astFunctionVariable* var, indent_aware_s
 
 inline void astDeclarationStatementToString(astDeclarationStatement* declStatement, indent_aware_stringbuilder& sb) {
     for (const auto& variable : declStatement->variables) {
-        astFunctionVariableToString(variable, sb);
+        astFunctionVariableToString(variable, sb, kSemicolon);
     }
 }
 
