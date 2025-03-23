@@ -4,12 +4,19 @@
 
 The straight-forward API allows you to parse GLSL into an abstact-syntax-tree in only a couple lines, for example
 ```cpp
+#include <glsl-parser/converter.h>
 #include <glsl-parser/parser.h>
 
 glsl::parser parse(sourceCode);
 glsl::astTU *translationUnit = parse.parse(astTU::kFragment);
 if (translationUnit) {
     // Do something with the AST here
+
+    // When done, convert back to GLSL
+    // or implement your own AST to code
+    // converter.
+    const char* converted = converter().convertTU(translationUnit);
+    printf("%s", converted);
 } else {
     // A parse error occured
     fprintf(stderr, "%s\n", parse.error());
@@ -38,8 +45,9 @@ Check out the superior diagnostics [here](EXAMPLE_ERRORS.md)
 
 ### Portable and embeddable
   * Written in portable C++11.
-    * Uses *std::vector* from the standard library
-    * Uses *std::to_string* from the standard library
+    * Uses *'std::vector'* from the standard library
+    * Uses *'for range'* loops
+    * Uses the *'auto'* type
   * Exception free
   * Doesn't use virtual functions
   * Small (~90 KB)
