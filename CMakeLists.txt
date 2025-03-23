@@ -31,7 +31,10 @@ if(NOT BUILD_LIBRARY_STATIC AND NOT BUILD_LIBRARY_SHARED)
 endif()
 
 if(CMAKE_BUILD_TYPE MATCHES Release)
-    set(BUILD_STRIP_TARGETS)
+    if(NOT DEFINED BUILD_STRIP_TARGETS)
+        set(BUILD_STRIP_TARGETS)
+    endif()
+    
     message(STATUS "Since CMAKE_BUILD_TYPE is Release.")
     message(STATUS "We are stripping both library and executable.")
 
@@ -47,7 +50,9 @@ if(MSVC)
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
     set(COMPILER_SPECIFIC_OPTIONS /permissive- /Zc:preprocessor /W4)
 else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -fno-exceptions -Wall -Wextra -Wformat")
+    set(CMAKE_CXX_FLAGS
+    	"${CMAKE_CXX_FLAGS} -fno-rtti -fno-exceptions -Wall -Wextra -Wformat"
+    )
 endif()
 
 set(LIB_SOURCES
@@ -69,7 +74,7 @@ set(LIB_HEADERS
 
 set(EXE_SOURCES
     executable/src/main.cpp
-    executable/src/old.cpp
+    # executable/src/old.cpp
 )
 
 if(BUILD_LIBRARY_SHARED)
@@ -85,8 +90,13 @@ add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 if(BUILD_EXECUTABLE)
     add_executable(${PROJECT_NAME}-exe ${EXE_SOURCES})
-    target_link_libraries(${PROJECT_NAME}-exe PRIVATE ${PROJECT_NAME}::${PROJECT_NAME})
-    set_target_properties(${PROJECT_NAME}-exe PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
+    target_link_libraries(${PROJECT_NAME}-exe
+    	PRIVATE ${PROJECT_NAME}::${PROJECT_NAME}
+    )
+
+    set_target_properties(${PROJECT_NAME}-exe
+    	PROPERTIES OUTPUT_NAME ${PROJECT_NAME}
+    )
 
     if(BUILD_LIBRARY_SHARED)
         set_target_properties(${PROJECT_NAME}-exe PROPERTIES
@@ -140,4 +150,4 @@ message(STATUS "  BUILD_LIBRARY_STATIC: ${BUILD_LIBRARY_STATIC}")
 message(STATUS "  BUILD_LIBRARY_SHARED: ${BUILD_LIBRARY_SHARED}")
 message(STATUS "  BUILD_EXECUTABLE: ${BUILD_EXECUTABLE}")
 message(STATUS "  BUILD_STRIP_TARGETS: ${BUILD_STRIP_TARGETS}")
-message(STATUS "  BUILD_INSTALL: ${BUILD_INSTALL}")
+
