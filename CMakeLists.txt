@@ -31,10 +31,10 @@ if(NOT BUILD_LIBRARY_STATIC AND NOT BUILD_LIBRARY_SHARED)
 endif()
 
 if(CMAKE_BUILD_TYPE MATCHES Release)
-    set(BUILD_STRIP_TARGETS ON)
+    # set(BUILD_STRIP_TARGETS ON)
 
-    message(STATUS "Since CMAKE_BUILD_TYPE is Release.")
-    message(STATUS "We are stripping both library and executable.")
+    # message(STATUS "Since CMAKE_BUILD_TYPE is Release.")
+    # message(STATUS "We are stripping both library and executable.")
     
     if(MSVC)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /O2")
