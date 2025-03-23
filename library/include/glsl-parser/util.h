@@ -66,11 +66,49 @@ private:
 
 struct indent_aware_stringbuilder {
     indent_aware_stringbuilder() : buffer(NULL), capacity(0), length(0), currentIndent(0), atLineStart(true) {
-        resize(16);
+        // Start with a reasonable buffer size
+        buffer = new char[64];
+        capacity = 64;
+        length = 0;
+        buffer[0] = '\0';
     }
     
     ~indent_aware_stringbuilder() {
-        delete[] buffer;
+        if (buffer) {
+            delete[] buffer;
+            buffer = NULL;
+        }
+    }
+    
+    // Copy constructor
+    indent_aware_stringbuilder(const indent_aware_stringbuilder& other) : 
+        buffer(NULL), capacity(0), length(0), currentIndent(0), atLineStart(true) {
+        *this = other;  // Use assignment operator
+    }
+    
+    // Assignment operator
+    indent_aware_stringbuilder& operator=(const indent_aware_stringbuilder& other) {
+        if (this != &other) {
+            // Allocate new buffer
+            char* newBuffer = new char[other.capacity];
+            
+            // Copy the data
+            memcpy(newBuffer, other.buffer, other.length);
+            
+            // Clean up old buffer
+            if (buffer) {
+                delete[] buffer;
+            }
+            
+            // Update member variables
+            buffer = newBuffer;
+            capacity = other.capacity;
+            length = other.length;
+            currentIndent = other.currentIndent;
+            indentStack = other.indentStack;
+            atLineStart = other.atLineStart;
+        }
+        return *this;
     }
     
     void pushIndent(int spaces = 4) {
@@ -96,22 +134,38 @@ struct indent_aware_stringbuilder {
         size_t strLen = strlen(str);
         if (strLen == 0) return;
         
-        // Pre-allocate space for string + possible indentation
-        ensureCapacity(strLen + currentIndent);
+        // Calculate worst-case required capacity (if every char is a newline)
+        size_t maxNeeded = length + strLen + (strLen * currentIndent);
+        if (maxNeeded >= capacity) {
+            // Grow the buffer to at least double or what we need
+            size_t newCapacity = capacity * 2;
+            while (newCapacity <= maxNeeded) {
+                newCapacity *= 2;
+            }
+            grow(newCapacity);
+        }
         
+        // Now append character by character, handling indentation
         for (size_t i = 0; i < strLen; ++i) {
             if (atLineStart) {
-                appendIndentation();
-            }
-            
-            buffer[length++] = str[i];
-            
-            if (str[i] == '\n') {
-                atLineStart = true;
-            } else {
+                // Add indentation at start of line
+                for (int j = 0; j < currentIndent; ++j) {
+                    buffer[length++] = ' ';
+                }
                 atLineStart = false;
             }
+            
+            // Add the character
+            buffer[length++] = str[i];
+            
+            // Check for newline
+            if (str[i] == '\n') {
+                atLineStart = true;
+            }
         }
+        
+        // Always null-terminate (even though we don't count it in length)
+        buffer[length] = '\0';
     }
 
     void append(const indent_aware_stringbuilder& builder) {
@@ -124,9 +178,8 @@ struct indent_aware_stringbuilder {
     }
     
     const char* toString() const {
-        // Ensure null termination
-        const_cast<indent_aware_stringbuilder*>(this)->ensureCapacity(1);
-        buffer[length] = '\0';
+        if (!buffer) return "";
+        buffer[length] = '\0';  // Ensure null termination
         return buffer;
     }
     
@@ -136,9 +189,11 @@ struct indent_aware_stringbuilder {
     
     void clear() {
         length = 0;
-        currentIndent = 0;
-        indentStack.clear();
+        if (buffer) {
+            buffer[0] = '\0';
+        }
         atLineStart = true;
+        // Don't reset indentation - that's the caller's job
     }
 
     indent_aware_stringbuilder& operator+=(const char* str) {
@@ -155,39 +210,26 @@ private:
     int currentIndent;
     bool atLineStart;
     
-    void resize(size_t newCapacity) {
+    // Grow the buffer to the new capacity
+    void grow(size_t newCapacity) {
         char* newBuffer = new char[newCapacity];
+        
+        // Copy existing content if we have any
+        if (buffer && length > 0) {
+            memcpy(newBuffer, buffer, length);
+        }
+        
+        // Always null terminate
+        newBuffer[length] = '\0';
+        
+        // Clean up old buffer
         if (buffer) {
-            // Copy existing content, limited by the smaller of length or newCapacity
-            size_t copySize = length;
-            if (copySize > newCapacity) {
-                copySize = newCapacity;
-            }
-            memcpy(newBuffer, buffer, copySize);
             delete[] buffer;
         }
+        
+        // Update member variables
         buffer = newBuffer;
         capacity = newCapacity;
-    }
-    
-    void ensureCapacity(size_t additionalChars) {
-        if (length + additionalChars >= capacity) {
-            size_t newCapacity = (capacity == 0) ? 16 : capacity * 2;
-            while (length + additionalChars >= newCapacity) {
-                newCapacity *= 2;
-            }
-            resize(newCapacity);
-        }
-    }
-    
-    void appendIndentation() {
-        if (currentIndent > 0) {
-            ensureCapacity(currentIndent);
-            for (int i = 0; i < currentIndent; ++i) {
-                buffer[length++] = ' ';
-            }
-        }
-        atLineStart = false;
     }
 };
 
