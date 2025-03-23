@@ -368,8 +368,16 @@ inline void astWhileStatementToString(astWhileStatement* whileStatement, indent_
 
 inline void astDoStatementToString(astDoStatement* doStatement, indent_aware_stringbuilder& sb) {
     sb += "do ";
-    astStatementToString(doStatement->body, sb, kSemicolon);
-    if (doStatement->body->type != STATEMENT(Compound)) sb += " ";
+
+    int flags = kSemicolon;
+    if (doStatement->body->type == STATEMENT(Compound)
+     && reinterpret_cast<astCompoundStatement*>(doStatement->body)->statements.size()) {
+     	flags |= kNewLine;
+    }
+    
+    astStatementToString(doStatement->body, sb, flags);
+    if (doStatement->body->type != STATEMENT(Compound) || !(flags & kNewLine)) sb += " ";
+    
     sb += "while (";
     astExpressionToString(doStatement->condition, sb);
     sb.appendLine(");");
@@ -401,7 +409,10 @@ inline void astIfStatementToString(astIfStatement* ifStatement, indent_aware_str
 	sb += "if (";
 	astExpressionToString(ifStatement->condition, sb);
 	sb += ") ";
-	astStatementToString(ifStatement->thenStatement, sb, kSemicolon | kNewLine | kCompoundChain);
+	int flags = kSemicolon | kNewLine;
+	if (ifStatement->elseStatement) flags |= kCompoundChain;
+
+	astStatementToString(ifStatement->thenStatement, sb, flags);
 	if (ifStatement->thenStatement->type != STATEMENT(Compound)) sb.appendLine();
 
 	if (ifStatement->elseStatement) {
@@ -435,7 +446,8 @@ inline void astStatementToString(astStatement* statement, indent_aware_stringbui
 
             if (!compoundStatements->statements.size()) {
                 sb.append("{");
-                sb.appendLine(" }");
+                if (flags & kNewLine) sb.appendLine(" }");
+                else sb.append(" }");
             } else {
                 sb.appendLine("{");
                 sb.pushIndent();
