@@ -37,8 +37,9 @@ Check out the superior diagnostics [here](EXAMPLE_ERRORS.md)
   * Generate introspection information
 
 ### Portable and embeddable
-  * Written in portable C++03.
-    * Only uses *std::vector* from the standard library
+  * Written in portable C++11.
+    * Uses *std::vector* from the standard library
+    * Uses *std::to_string* from the standard library
   * Exception free
   * Doesn't use virtual functions
   * Small (~90 KB)

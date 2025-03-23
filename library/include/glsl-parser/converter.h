@@ -15,9 +15,9 @@ private:
     indent_aware_stringbuilder stringBuffer;
 
     void visitPreprocessors(astTU*);
-    void visitStructs(astTU*);
+    void visitStructures(astTU*);
     void visitInterfaceBlocks(astTU*);
-    void visitGlobals(astTU*);
+    void visitGlobalVariables(astTU*);
 };
 
 }

@@ -63,11 +63,6 @@ struct indent_aware_stringbuilder {
     indent_aware_stringbuilder() : buffer(NULL), capacity(0), length(0), currentIndent(0), atLineStart(true) {
         resize(16);
     }
-
-    indent_aware_stringbuilder(indent_aware_stringbuilder& other) {
-        this->indentStack = other.indentStack;
-        this->currentIndent = other.currentIndent;
-    }
     
     ~indent_aware_stringbuilder() {
         delete[] buffer;
@@ -83,6 +78,11 @@ struct indent_aware_stringbuilder {
             currentIndent -= indentStack.back();
             indentStack.pop_back();
         }
+    }
+
+    void copyIndent(indent_aware_stringbuilder& other) {
+        currentIndent = other.currentIndent;
+        indentStack = other.indentStack;
     }
     
     void append(const char* str) {
@@ -103,6 +103,10 @@ struct indent_aware_stringbuilder {
                 atLineStart = true;
             }
         }
+    }
+
+    void append(indent_aware_stringbuilder builder) {
+        append(builder.toString());
     }
     
     void appendLine(const char* str = "") {
